@@ -1,8 +1,3 @@
-# Weather Data Exploratory Analysis and Visualization
-# Author: Data Science Team
-# Last Updated: December 2024
-# Description: Creates comprehensive visualizations for weather data analysis
-
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -28,7 +23,20 @@ class WeatherDataVisualizer:
         print("Dataset loaded successfully!")
         print("\nDataset Info:")
         print(self.df.info())
+
+    def create_weather_parameter_boxplots(self):
+        """Create boxplots for weather parameters based on extreme weather events."""
+        parameters = ['max_temp', 'rain', 'cbl']  # Add or modify parameters based on your data
         
+        for param in parameters:
+            plt.figure(figsize=(8, 6))
+            sns.boxplot(data=self.df, x="extreme_weather", y=param, palette="Set2")
+            plt.title(f"{param} Distribution by Extreme Weather", fontsize=12)
+            plt.xlabel("Extreme Weather (0: No, 1: Yes)", fontsize=10)
+            plt.ylabel(param, fontsize=10)
+            self.figures[f"{param}_boxplot"] = plt.gcf()
+            plt.close()
+
     def create_target_distribution(self):
         """Create distribution plot of extreme weather events."""
         plt.figure(figsize=(10, 6))
@@ -38,7 +46,7 @@ class WeatherDataVisualizer:
         plt.ylabel("Count", fontsize=10)
         self.figures["extreme_weather_distribution"] = plt.gcf()
         plt.close()
-        
+
     def create_correlation_heatmap(self):
         """Create correlation heatmap for numerical features."""
         plt.figure(figsize=(12, 10))
@@ -48,42 +56,21 @@ class WeatherDataVisualizer:
         plt.title("Correlation Heatmap of Weather Features", fontsize=12)
         self.figures["correlation_heatmap"] = plt.gcf()
         plt.close()
-        
-    def create_weather_parameter_boxplots(self):
-        """Create boxplots for key weather parameters by extreme weather status."""
-        parameters = {
-            'max_temp': 'Temperature',
-            'rain': 'Precipitation',
-            'wind_speed': 'Wind Speed'
-        }
-        
-        for param, title in parameters.items():
-            plt.figure(figsize=(8, 6))
-            sns.boxplot(data=self.df, x="extreme_weather", y=param, palette="Set2")
-            plt.title(f"{title} vs Extreme Weather", fontsize=12)
-            plt.xlabel("Extreme Weather (0: No, 1: Yes)", fontsize=10)
-            plt.ylabel(title, fontsize=10)
-            self.figures[f"{param}_boxplot"] = plt.gcf()
-            plt.close()
-            
+
     def create_feature_pairplot(self):
         """Create pairplot for selected weather features."""
-        selected_features = ["rain", "pressure_cbl", "wind_speed", 
-                           "temp_range", "extreme_weather"]
-        pairplot = sns.pairplot(self.df[selected_features], 
-                               hue="extreme_weather", 
-                               palette="husl")
+        selected_features = ["rain", "cbl", "temp_range", "extreme_weather"]
+        pairplot = sns.pairplot(self.df[selected_features], hue="extreme_weather", palette="husl")
         self.figures["feature_pairplot"] = pairplot.fig
         plt.close()
-        
+
     def create_time_series_plots(self):
         """Create time series plots for key weather parameters."""
         parameters = {
             'max_temp': 'Temperature',
             'rain': 'Precipitation',
-            'wind_speed': 'Wind Speed'
         }
-        
+
         for param, title in parameters.items():
             plt.figure(figsize=(12, 6))
             plt.plot(self.df['date'], self.df[param])
@@ -94,7 +81,7 @@ class WeatherDataVisualizer:
             plt.tight_layout()
             self.figures[f"{param}_timeseries"] = plt.gcf()
             plt.close()
-            
+
     def create_seasonal_analysis(self):
         """Create seasonal analysis plots."""
         plt.figure(figsize=(10, 6))
@@ -107,18 +94,18 @@ class WeatherDataVisualizer:
         plt.tight_layout()
         self.figures["seasonal_analysis"] = plt.gcf()
         plt.close()
-        
+
     def generate_all_plots(self):
         """Generate all visualization plots."""
         print("Generating visualizations...")
         self.create_target_distribution()
         self.create_correlation_heatmap()
-        self.create_weather_parameter_boxplots()
         self.create_feature_pairplot()
         self.create_time_series_plots()
         self.create_seasonal_analysis()
+        self.create_weather_parameter_boxplots()  # Added this line
         print("All visualizations generated successfully!")
-        
+
     def save_plots(self, output_dir):
         """
         Save all generated plots to specified directory.
@@ -141,9 +128,10 @@ class WeatherDataVisualizer:
         """Display summary statistics of the dataset."""
         print("\nSummary Statistics:")
         print(self.df.describe())
-        
+
         print("\nExtreme Weather Event Summary:")
         print(self.df['extreme_weather'].value_counts(normalize=True))
+
 
 def main():
     """Main execution function."""

@@ -1,176 +1,31 @@
 # ---------------------------
-# Data Manipulation and Analysis
+# Import Libraries
 # ---------------------------
 
 import pandas as pd
 import numpy as np
-
-# ---------------------------
-# Machine Learning and Preprocessing
-# ---------------------------
-
-from sklearn.cluster import KMeans, DBSCAN
+from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sklearn.metrics import silhouette_score, mean_absolute_error, mean_squared_error, r2_score, precision_score, recall_score, f1_score, accuracy_score
+from sklearn.metrics import silhouette_score, mean_absolute_error, mean_squared_error, r2_score, accuracy_score, precision_score, f1_score
 from sklearn.model_selection import train_test_split
-
-# ---------------------------
-# Deep Learning Framework
-# ---------------------------
-
-import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping
-
-# ---------------------------
-# Visualization Libraries
-# ---------------------------
-
 import plotly.express as px
 import plotly.graph_objects as go
-import seaborn as sns
-import matplotlib.pyplot as plt
 
 # ---------------------------
 # Load the dataset
 # ---------------------------
 
-file_path = "/content/Mera_CleanData.csv"
+file_path = "Mera_CleanData.csv"
 data = pd.read_csv(file_path)
 
-# Remove the 'extreme_weather' column as it's not needed for clustering
-data = data.drop('extreme_weather', axis=1)
-
 # ---------------------------
-# Select relevant features for clustering
+# Validate Columns
 # ---------------------------
 
-features = ['extreme_rain', 'heatwave', 'high_wind']
-data_clustering = data[features].dropna()
-
-# ---------------------------
-# Standardize features for clustering
-# ---------------------------
-
-scaler = StandardScaler()
-scaled_features = scaler.fit_transform(data_clustering)
-
-# ---------------------------
-# Apply K-Means Clustering
-# ---------------------------
-
-kmeans = KMeans(n_clusters=3, random_state=42)  # Adjust n_clusters based on your requirements
-kmeans_labels = kmeans.fit_predict(scaled_features)
-
-# Calculate the silhouette score to evaluate the clustering quality
-silhouette_kmeans = silhouette_score(scaled_features, kmeans_labels)
-
-# Add the cluster labels to the dataset
-data_clustering['Cluster'] = kmeans_labels
-
-# ---------------------------
-# Visualization: Extreme Rain vs High Wind
-# ---------------------------
-
-fig1 = px.scatter(
-    data_clustering,
-    x='extreme_rain',
-    y='high_wind',
-    color='Cluster',
-    title="K-Means Clustering: Extreme Rain vs High Wind",
-    labels={'Cluster': 'Cluster'},
-    template="plotly_dark"
-)
-
-fig1.update_layout(
-    xaxis_title="Extreme Rain",
-    yaxis_title="High Wind",
-    legend_title="Cluster",
-    height=600,
-    width=800
-)
-fig1.show()
-
-# ---------------------------
-# Visualization: Heatwave vs High Wind
-# ---------------------------
-
-fig2 = px.scatter(
-    data_clustering,
-    x='heatwave',
-    y='high_wind',
-    color='Cluster',
-    title="K-Means Clustering: Heatwave vs High Wind",
-    labels={'Cluster': 'Cluster'},
-    template="plotly_dark"
-)
-
-fig2.update_layout(
-    xaxis_title="Heatwave",
-    yaxis_title="High Wind",
-    legend_title="Cluster",
-    height=600,
-    width=800
-)
-fig2.show()
-
-# ---------------------------
-# 3D Scatter Plot for Extreme Rain, Heatwave, and High Wind
-# ---------------------------
-
-fig3 = px.scatter_3d(
-    data_clustering,
-    x='extreme_rain',
-    y='heatwave',
-    z='high_wind',
-    color='Cluster',
-    title="K-Means Clustering: 3D Visualization",
-    labels={'Cluster': 'Cluster'},
-    template="plotly_dark"
-)
-
-fig3.update_layout(
-    scene=dict(
-        xaxis_title="Extreme Rain",
-        yaxis_title="Heatwave",
-        zaxis_title="High Wind"
-    ),
-    height=700,
-    width=900
-)
-fig3.show()
-
-# ---------------------------
-# Cluster Averages for Further Insights
-# ---------------------------
-
-print(f"K-Means Silhouette Score: {silhouette_kmeans}")
-cluster_means = data_clustering.groupby('Cluster').mean()
-print("Cluster Means:\n", cluster_means)
-
-# ---------------------------
-# Create 'Extreme Weather' feature
-# ---------------------------
-
-rain_weight = 0.333
-heatwave_weight = 0.333
-high_wind_weight = 0.333
-
-# Calculate a weighted sum for extreme weather conditions
-data['Extreme_Weather'] = (
-    data['extreme_rain'] * rain_weight +
-    data['heatwave'] * heatwave_weight +
-    data['high_wind'] * high_wind_weight
-)
-
-# Normalize the 'Extreme_Weather' feature
-data['Extreme_Weather'] = data['Extreme_Weather'] / data['Extreme_Weather'].max()
-
-# ---------------------------
-# Define the features and target for the model
-# ---------------------------
-
+# Original features list
 features = [
     'max_temp', 'min_temp', 'temp_range', 'rain', 'pressure_cbl', 'wind_speed',
     'max_10minute_wind', 'dir_10minute_wind', 'max_gust', 'sun', 'global_radiation',
@@ -178,20 +33,42 @@ features = [
     'heatwave', 'high_wind'
 ]
 
-target = 'Extreme_Weather'
+# Check for missing columns
+existing_features = [feature for feature in features if feature in data.columns]
+missing_features = [feature for feature in features if feature not in data.columns]
+
+if missing_features:
+    print(f"Warning: The following features are missing and will be excluded: {missing_features}")
+
+# Update features to only include existing columns
+features = existing_features
 
 # ---------------------------
-# Handle missing or invalid values in features
+# Handle missing or invalid values
 # ---------------------------
 
-# Replace empty strings with NaN and convert the columns to numeric
 data[features] = data[features].replace(r'^\s*$', np.nan, regex=True)
 data[features] = data[features].astype(float)
-data[features] = data[features].fillna(data[features].mean())  # Fill NaN values with column mean
+data[features] = data[features].fillna(data[features].mean())
 
-# Normalize features using MinMaxScaler
+# Normalize the features
 scaler = MinMaxScaler()
 data[features] = scaler.fit_transform(data[features])
+
+# ---------------------------
+# Create Extreme Weather Feature
+# ---------------------------
+
+rain_weight = 0.333
+heatwave_weight = 0.333
+high_wind_weight = 0.333
+
+data['Extreme_Weather'] = (
+    data['extreme_rain'] * rain_weight +
+    data['heatwave'] * heatwave_weight +
+    data['high_wind'] * high_wind_weight
+)
+data['Extreme_Weather'] = data['Extreme_Weather'] / data['Extreme_Weather'].max()
 
 # ---------------------------
 # Create sequences for LSTM model
@@ -205,7 +82,7 @@ def create_sequences(data, target_col, seq_length):
     return np.array(X), np.array(y)
 
 seq_length = 90
-X, y = create_sequences(data, target, seq_length)
+X, y = create_sequences(data, 'Extreme_Weather', seq_length)
 
 # ---------------------------
 # Train-test split
@@ -221,15 +98,12 @@ model = Sequential([
     LSTM(128, activation='relu', return_sequences=True, input_shape=(seq_length, len(features))),
     Dropout(0.3),
     LSTM(64, activation='relu'),
-    Dense(1, activation='linear')  # Use linear activation for regression
+    Dense(1, activation='linear')
 ])
 
 model.compile(optimizer='adam', loss='mean_squared_error', metrics=['mae'])
 
-# ---------------------------
 # Early stopping callback
-# ---------------------------
-
 early_stopping = EarlyStopping(monitor='val_loss', patience=15, restore_best_weights=True)
 
 # ---------------------------
@@ -302,6 +176,6 @@ Accuracy: {accuracy:.4f}
 Precision: {precision:.4f}
 F1-Score: {f1:.4f}
 Mean Absolute Error (MAE): {mae:.4f}
-Root Mean Squared Error (RMSE): {mse:.4f}
+Root Mean Squared Error (RMSE): {mse**0.5:.4f}
 R² Score: {r2:.4f}
 """)
